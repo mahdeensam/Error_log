@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GRE Error Log</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Literata:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f6fa;
+    --surface: #ffffff;
+    --surface2: #f0f1f8;
+    --surface3: #e6e8f4;
+    --border: rgba(99,102,180,0.13);
+    --border2: rgba(99,102,180,0.25);
+    --text: #1a1b2e;
+    --text2: #5c5f80;
+    --text3: #9799b8;
+    --accent: #5b5ef5;
+    --accent2: #4245e0;
+    --red: #e53e5e;
+    --red-bg: #fde8ed;
+    --amber: #d97706;
+    --amber-bg: #fef3cd;
+    --green: #16a058;
+    --green-bg: #d1fae8;
+    --teal: #0891b2;
+    --teal-bg: #cff4fc;
+    --purple: #7c3aed;
+    --purple-bg: #ede9fe;
+    --pink: #db2777;
+    --pink-bg: #fce7f3;
+    --orange: #ea580c;
+    --orange-bg: #ffedd5;
+    --font: 'Syne', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Literata', serif;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(91,94,245,0.07) 0%, transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(219,39,119,0.06) 0%, transparent 40%),
+      radial-gradient(circle at 80% 15%, rgba(22,160,88,0.05) 0%, transparent 30%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .logo-area h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    background: linear-gradient(125deg, #5b5ef5 0%, #db2777 55%, #ea580c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .logo-area p { color: var(--text3); font-size: 13px; margin-top: 3px; }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 1.75rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    transition: box-shadow 0.2s, transform 0.2s;
+    box-shadow: 0 1px 4px rgba(99,102,180,0.07);
+  }
+  .stat-card:hover { box-shadow: 0 4px 16px rgba(99,102,180,0.13); transform: translateY(-1px); }
+  .stat-card .label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; font-family: var(--mono); }
+  .stat-card.total { border-top: 3px solid var(--accent); }
+  .stat-card.total .value { color: var(--accent); }
+  .stat-card.open { border-top: 3px solid var(--red); }
+  .stat-card.open .value { color: var(--red); }
+  .stat-card.working { border-top: 3px solid var(--amber); }
+  .stat-card.working .value { color: var(--amber); }
+  .stat-card.resolved { border-top: 3px solid var(--green); }
+  .stat-card.resolved .value { color: var(--green); }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-wrap {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+  .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.35; pointer-events: none; color: var(--accent); }
+  .search-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 9px 12px 9px 36px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-shadow: 0 1px 3px rgba(99,102,180,0.06);
+  }
+  .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,94,245,0.1); }
+  .search-wrap input::placeholder { color: var(--text3); }
+
+  select {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 9px 12px;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    box-shadow: 0 1px 3px rgba(99,102,180,0.06);
+  }
+  select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,94,245,0.1); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s, box-shadow 0.15s;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(91,94,245,0.25);
+  }
+  .btn:hover { opacity: 0.9; box-shadow: 0 4px 14px rgba(91,94,245,0.35); }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text2);
+    border: 1.5px solid var(--border);
+    box-shadow: 0 1px 3px rgba(99,102,180,0.06);
+  }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); box-shadow: none; opacity: 1; }
+
+  /* Error Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(99,102,180,0.08);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead th {
+    background: linear-gradient(135deg, #f0f1fb 0%, #f5f0fd 100%);
+    border-bottom: 1.5px solid var(--border);
+    color: var(--text3);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 13px 14px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f7f7ff; }
+
+  td {
+    padding: 12px 14px;
+    vertical-align: middle;
+    font-size: 13px;
+  }
+
+  .col-id { width: 70px; font-family: var(--mono); color: var(--text3); font-size: 12px; }
+  .col-section { width: 100px; }
+  .col-type { width: 110px; }
+  .col-question { max-width: 260px; }
+  .col-question .q-text {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 260px; display: block;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--text3);
+    font-size: 12px;
+  }
+  .col-question .q-title { font-size: 13px; color: var(--text); margin-bottom: 2px; font-weight: 500; }
+  .col-status { width: 100px; }
+  .col-priority { width: 90px; }
+  .col-mastery { width: 100px; }
+  .col-date { width: 90px; font-family: var(--mono); color: var(--text3); font-size: 12px; }
+  .col-actions { width: 50px; text-align: center; }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+  }
+
+  .badge-open { background: var(--red-bg); color: var(--red); }
+  .badge-working { background: var(--amber-bg); color: var(--amber); }
+  .badge-resolved { background: var(--green-bg); color: var(--green); }
+
+  .badge-section-v { background: var(--purple-bg); color: var(--purple); }
+  .badge-section-q { background: var(--teal-bg); color: var(--teal); }
+  .badge-section-aw { background: var(--orange-bg); color: var(--orange); }
+
+  .badge-prio-high { background: var(--red-bg); color: var(--red); }
+  .badge-prio-med { background: var(--amber-bg); color: var(--amber); }
+  .badge-prio-low { background: var(--green-bg); color: var(--green); }
+
+  /* Mastery bar */
+  .mastery-wrap { display: flex; align-items: center; gap: 8px; }
+  .mastery-bar { flex: 1; height: 6px; background: var(--surface3); border-radius: 10px; overflow: hidden; min-width: 50px; }
+  .mastery-fill { height: 100%; border-radius: 10px; transition: width 0.3s; }
+  .mastery-label { font-family: var(--mono); font-size: 11px; color: var(--text3); min-width: 28px; text-align: right; }
+
+  /* Row actions */
+  .row-action-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text3);
+    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .row-action-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--purple-bg); }
+
+  /* Empty state */
+  .empty-state {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text3);
+  }
+  .empty-state p { font-size: 15px; margin-bottom: 8px; color: var(--text2); }
+  .empty-state span { font-size: 13px; }
+
+  /* Modal overlay */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20,20,50,0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    backdrop-filter: blur(6px);
+  }
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1.5px solid var(--border2);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 580px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1.75rem;
+    box-shadow: 0 20px 60px rgba(91,94,245,0.15), 0 4px 20px rgba(0,0,0,0.1);
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .modal-header h2 { font-size: 18px; font-weight: 700; color: var(--text); }
+
+  .close-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 50%; color: var(--text3);
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 18px; transition: all 0.15s;
+  }
+  .close-btn:hover { color: var(--red); border-color: var(--red); background: var(--red-bg); }
+
+  /* Form */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+  .form-group label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text3); font-weight: 600; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; font-family: var(--serif); line-height: 1.6; }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,94,245,0.1); background: #fff; }
+  .form-group input::placeholder,
+  .form-group textarea::placeholder { color: var(--text3); }
+
+  .mastery-slider-row { display: flex; align-items: center; gap: 12px; }
+  input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+    height: 4px;
+  }
+  .mastery-val { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--accent); min-width: 32px; }
+
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1.5px solid var(--border); }
+
+  /* Detail modal notes */
+  .detail-section { margin-bottom: 1.25rem; }
+  .detail-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 8px; font-weight: 700; }
+  .detail-note {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-family: var(--serif);
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text2);
+    white-space: pre-wrap;
+  }
+  .detail-note.empty { font-style: italic; color: var(--text3); }
+
+  .detail-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .detail-meta-item { }
+  .detail-meta-item .key { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; font-weight: 600; }
+  .detail-meta-item .val { font-size: 14px; color: var(--text); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--surface);
+    border: 1.5px solid var(--green);
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    color: var(--green);
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 200;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 20px rgba(22,160,88,0.2);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Progress section */
+  .progress-section {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 2px 12px rgba(99,102,180,0.07);
+  }
+  .progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .progress-header h2 { font-size: 13px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; }
+  .section-bars { display: flex; flex-direction: column; gap: 10px; }
+  .section-bar-row { display: grid; grid-template-columns: 80px 1fr 40px; align-items: center; gap: 12px; }
+  .section-bar-row .name { font-size: 12px; font-weight: 600; }
+  .section-big-bar { height: 8px; background: var(--surface3); border-radius: 10px; overflow: hidden; }
+  .section-big-fill { height: 100%; border-radius: 10px; transition: width 0.6s cubic-bezier(0.34, 1.2, 0.64, 1); }
+  .section-bar-row .pct { font-family: var(--mono); font-size: 11px; color: var(--text3); text-align: right; font-weight: 600; }
+
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    display: inline-block;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 100px;
+    padding: 3px 11px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 1px 3px rgba(99,102,180,0.06);
+  }
+  .tag:hover { border-color: var(--accent); color: var(--accent); background: var(--purple-bg); }
+  .tag.active { background: linear-gradient(135deg, var(--accent), #8b5cf6); border-color: transparent; color: #fff; box-shadow: 0 2px 8px rgba(91,94,245,0.3); }
+
+  .pagination { display: flex; align-items: center; gap: 8px; margin-top: 1rem; justify-content: center; }
+  .page-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text2);
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 1px 3px rgba(99,102,180,0.06);
+  }
+  .page-btn:hover { background: var(--surface2); border-color: var(--border2); }
+  .page-btn.active { background: linear-gradient(135deg, var(--accent), #8b5cf6); border-color: transparent; color: #fff; box-shadow: 0 2px 8px rgba(91,94,245,0.3); }
+  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  @media (max-width: 700px) {
+    .form-row { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .col-date, .col-mastery { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-area">
+      <h1>GRE Error Log</h1>
+      <p>Track, analyze, and conquer every mistake</p>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="btn btn-ghost" onclick="exportCSV()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+      <button class="btn" onclick="openAddModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Log Error
+      </button>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- Progress breakdown -->
+  <div class="progress-section">
+    <div class="progress-header">
+      <h2>Mastery by section</h2>
+      <span id="overallMastery" style="font-family:var(--mono);font-size:13px;color:var(--text3);"></span>
+    </div>
+    <div class="section-bars" id="sectionBars"></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchInput" placeholder="Search errors, notes, question types..." oninput="renderTable()">
+    </div>
+    <select id="filterSection" onchange="renderTable()">
+      <option value="">All sections</option>
+      <option value="Verbal">Verbal</option>
+      <option value="Quant">Quant</option>
+      <option value="AWA">AWA</option>
+    </select>
+    <select id="filterStatus" onchange="renderTable()">
+      <option value="">All statuses</option>
+      <option value="Open">Open</option>
+      <option value="Working">Working</option>
+      <option value="Resolved">Resolved</option>
+    </select>
+    <select id="filterPriority" onchange="renderTable()">
+      <option value="">All priorities</option>
+      <option value="High">High</option>
+      <option value="Medium">Medium</option>
+      <option value="Low">Low</option>
+    </select>
+    <select id="sortBy" onchange="renderTable()">
+      <option value="date_desc">Newest first</option>
+      <option value="date_asc">Oldest first</option>
+      <option value="mastery_asc">Low mastery first</option>
+      <option value="mastery_desc">High mastery first</option>
+      <option value="priority">Priority</option>
+    </select>
+  </div>
+
+  <!-- Tag filters -->
+  <div class="tag-list" id="tagList" style="margin-bottom:1rem;"></div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table id="errorTable">
+      <thead>
+        <tr>
+          <th class="col-id">#</th>
+          <th class="col-section">Section</th>
+          <th class="col-type">Type</th>
+          <th class="col-question">Question / Topic</th>
+          <th class="col-status">Status</th>
+          <th class="col-priority">Priority</th>
+          <th class="col-mastery">Mastery</th>
+          <th class="col-date">Date</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <p>No errors logged yet</p>
+      <span>Click "Log Error" to track your first mistake</span>
+    </div>
+  </div>
+
+  <div class="pagination" id="pagination"></div>
+
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Log New Error</h2>
+      <button class="close-btn" onclick="closeModal('addModal')">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Section</label>
+        <select id="f_section">
+          <option value="Verbal">Verbal</option>
+          <option value="Quant">Quant</option>
+          <option value="AWA">AWA</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Question Type</label>
+        <select id="f_type">
+          <option value="Text Completion">Text Completion</option>
+          <option value="Sentence Equivalence">Sentence Equivalence</option>
+          <option value="Reading Comprehension">Reading Comprehension</option>
+          <option value="Critical Reasoning">Critical Reasoning</option>
+          <option value="Problem Solving">Problem Solving</option>
+          <option value="Data Interpretation">Data Interpretation</option>
+          <option value="Quantitative Comparison">Quantitative Comparison</option>
+          <option value="Numeric Entry">Numeric Entry</option>
+          <option value="Argument Essay">Argument Essay</option>
+          <option value="Issue Essay">Issue Essay</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Question / Topic</label>
+      <input type="text" id="f_question" placeholder="Brief description of the question or concept...">
+    </div>
+    <div class="form-group">
+      <label>Your Answer</label>
+      <input type="text" id="f_your_answer" placeholder="What did you answer?">
+    </div>
+    <div class="form-group">
+      <label>Correct Answer</label>
+      <input type="text" id="f_correct" placeholder="What was the right answer?">
+    </div>
+    <div class="form-group">
+      <label>Why I Got It Wrong</label>
+      <textarea id="f_why" placeholder="Root cause — careless mistake, concept gap, time pressure, trap answer..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Key Takeaway / Fix</label>
+      <textarea id="f_takeaway" placeholder="What rule, strategy, or concept do I need to remember?"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Priority</label>
+        <select id="f_priority">
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="f_status">
+          <option value="Open">Open</option>
+          <option value="Working">Working</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Tags (comma separated)</label>
+      <input type="text" id="f_tags" placeholder="e.g. vocabulary, algebra, time pressure">
+    </div>
+    <div class="form-group">
+      <label>Mastery Level — <span id="masteryDisplay">0%</span></label>
+      <div class="mastery-slider-row">
+        <input type="range" min="0" max="100" value="0" id="f_mastery" oninput="document.getElementById('masteryDisplay').textContent=this.value+'%'">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn" onclick="saveError()">Save Error</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="detailTitle">Error Detail</h2>
+      <button class="close-btn" onclick="closeModal('detailModal')">×</button>
+    </div>
+    <div id="detailContent"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="detailDeleteBtn">Delete</button>
+      <button class="btn" id="detailEditBtn">Edit</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORAGE_KEY = 'gre_errors_v2';
+let errors = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let editingId = null;
+let activeTag = null;
+let currentPage = 1;
+const PER_PAGE = 15;
+
+const SECTION_TYPES = {
+  Verbal: ['Text Completion','Sentence Equivalence','Reading Comprehension','Critical Reasoning'],
+  Quant: ['Problem Solving','Data Interpretation','Quantitative Comparison','Numeric Entry'],
+  AWA: ['Argument Essay','Issue Essay']
+};
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(errors)); }
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+function openAddModal(id) {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Log New Error';
+  document.getElementById('f_section').value = 'Verbal';
+  document.getElementById('f_type').value = 'Text Completion';
+  document.getElementById('f_question').value = '';
+  document.getElementById('f_your_answer').value = '';
+  document.getElementById('f_correct').value = '';
+  document.getElementById('f_why').value = '';
+  document.getElementById('f_takeaway').value = '';
+  document.getElementById('f_priority').value = 'High';
+  document.getElementById('f_status').value = 'Open';
+  document.getElementById('f_tags').value = '';
+  document.getElementById('f_mastery').value = 0;
+  document.getElementById('masteryDisplay').textContent = '0%';
+  document.getElementById('addModal').classList.add('active');
+}
+
+function openEditModal(id) {
+  const e = errors.find(x => x.id === id);
+  if (!e) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Error';
+  document.getElementById('f_section').value = e.section;
+  document.getElementById('f_type').value = e.type;
+  document.getElementById('f_question').value = e.question;
+  document.getElementById('f_your_answer').value = e.your_answer || '';
+  document.getElementById('f_correct').value = e.correct || '';
+  document.getElementById('f_why').value = e.why || '';
+  document.getElementById('f_takeaway').value = e.takeaway || '';
+  document.getElementById('f_priority').value = e.priority;
+  document.getElementById('f_status').value = e.status;
+  document.getElementById('f_tags').value = (e.tags||[]).join(', ');
+  document.getElementById('f_mastery').value = e.mastery || 0;
+  document.getElementById('masteryDisplay').textContent = (e.mastery||0) + '%';
+  closeModal('detailModal');
+  document.getElementById('addModal').classList.add('active');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function saveError() {
+  const q = document.getElementById('f_question').value.trim();
+  if (!q) { alert('Please enter a question or topic.'); return; }
+  const tagsRaw = document.getElementById('f_tags').value;
+  const tags = tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
+  const entry = {
+    id: editingId || genId(),
+    section: document.getElementById('f_section').value,
+    type: document.getElementById('f_type').value,
+    question: q,
+    your_answer: document.getElementById('f_your_answer').value.trim(),
+    correct: document.getElementById('f_correct').value.trim(),
+    why: document.getElementById('f_why').value.trim(),
+    takeaway: document.getElementById('f_takeaway').value.trim(),
+    priority: document.getElementById('f_priority').value,
+    status: document.getElementById('f_status').value,
+    tags: tags,
+    mastery: parseInt(document.getElementById('f_mastery').value),
+    date: editingId ? (errors.find(x=>x.id===editingId)||{}).date || today() : today(),
+    updated: today()
+  };
+  if (editingId) {
+    const idx = errors.findIndex(x=>x.id===editingId);
+    if (idx !== -1) errors[idx] = entry;
+  } else {
+    errors.unshift(entry);
+  }
+  save();
+  closeModal('addModal');
+  editingId = null;
+  renderAll();
+  showToast(editingId ? 'Error updated' : 'Error logged');
+}
+
+function today() {
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+
+function deleteError(id) {
+  errors = errors.filter(x => x.id !== id);
+  save(); closeModal('detailModal'); renderAll();
+  showToast('Error deleted');
+}
+
+function openDetail(id) {
+  const e = errors.find(x=>x.id===id);
+  if (!e) return;
+  document.getElementById('detailTitle').textContent = e.question.slice(0,50)+(e.question.length>50?'...':'');
+  const mc = masteryColor(e.mastery||0);
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-section">
+      <div class="detail-meta-grid">
+        <div class="detail-meta-item"><div class="key">Section</div><div class="val">${sectionBadge(e.section)}</div></div>
+        <div class="detail-meta-item"><div class="key">Type</div><div class="val" style="font-size:13px;">${e.type}</div></div>
+        <div class="detail-meta-item"><div class="key">Status</div><div class="val">${statusBadge(e.status)}</div></div>
+        <div class="detail-meta-item"><div class="key">Priority</div><div class="val">${prioBadge(e.priority)}</div></div>
+        <div class="detail-meta-item"><div class="key">Date</div><div class="val" style="font-family:var(--mono);font-size:13px;">${e.date}</div></div>
+        <div class="detail-meta-item">
+          <div class="key">Mastery</div>
+          <div class="val">
+            <div class="mastery-wrap">
+              <div class="mastery-bar"><div class="mastery-fill" style="width:${e.mastery||0}%;background:${mc};"></div></div>
+              <span class="mastery-label">${e.mastery||0}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    ${e.your_answer||e.correct ? `<div class="detail-section">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><h3>Your answer</h3><div class="detail-note ${!e.your_answer?'empty':''}">${e.your_answer||'Not recorded'}</div></div>
+        <div><h3>Correct answer</h3><div class="detail-note ${!e.correct?'empty':''}">${e.correct||'Not recorded'}</div></div>
+      </div>
+    </div>` : ''}
+    <div class="detail-section">
+      <h3>Why I got it wrong</h3>
+      <div class="detail-note ${!e.why?'empty':''}">${e.why || 'No notes added yet.'}</div>
+    </div>
+    <div class="detail-section">
+      <h3>Key takeaway / fix</h3>
+      <div class="detail-note ${!e.takeaway?'empty':''}">${e.takeaway || 'No takeaway recorded.'}</div>
+    </div>
+    ${e.tags&&e.tags.length ? `<div class="detail-section"><h3>Tags</h3><div class="tag-list">${e.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div></div>` : ''}
+  `;
+  document.getElementById('detailEditBtn').onclick = () => openEditModal(id);
+  document.getElementById('detailDeleteBtn').onclick = () => { if(confirm('Delete this error?')) deleteError(id); };
+  document.getElementById('detailModal').classList.add('active');
+}
+
+function masteryColor(v) {
+  if (v < 33) return '#e53e5e';
+  if (v < 66) return '#d97706';
+  return '#16a058';
+}
+
+function statusBadge(s) {
+  const map = {Open:'badge-open',Working:'badge-working',Resolved:'badge-resolved'};
+  return `<span class="badge ${map[s]||''}">${s}</span>`;
+}
+function sectionBadge(s) {
+  const map = {Verbal:'badge-section-v',Quant:'badge-section-q',AWA:'badge-section-aw'};
+  return `<span class="badge ${map[s]||''}">${s}</span>`;
+}
+function prioBadge(p) {
+  const map = {High:'badge-prio-high',Medium:'badge-prio-med',Low:'badge-prio-low'};
+  return `<span class="badge ${map[p]||''}">${p}</span>`;
+}
+
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const sec = document.getElementById('filterSection').value;
+  const stat = document.getElementById('filterStatus').value;
+  const prio = document.getElementById('filterPriority').value;
+  return errors.filter(e => {
+    if (sec && e.section !== sec) return false;
+    if (stat && e.status !== stat) return false;
+    if (prio && e.priority !== prio) return false;
+    if (activeTag && !(e.tags||[]).includes(activeTag)) return false;
+    if (q && !(e.question.toLowerCase().includes(q) || (e.why||'').toLowerCase().includes(q) || (e.takeaway||'').toLowerCase().includes(q) || (e.tags||[]).join(' ').toLowerCase().includes(q) || e.type.toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
+function getSorted(arr) {
+  const s = document.getElementById('sortBy').value;
+  const pMap = {High:0,Medium:1,Low:2};
+  return [...arr].sort((a,b) => {
+    if (s==='date_desc') return (b.date||'') > (a.date||'') ? 1 : -1;
+    if (s==='date_asc') return (a.date||'') > (b.date||'') ? 1 : -1;
+    if (s==='mastery_asc') return (a.mastery||0)-(b.mastery||0);
+    if (s==='mastery_desc') return (b.mastery||0)-(a.mastery||0);
+    if (s==='priority') return (pMap[a.priority]||1)-(pMap[b.priority]||1);
+    return 0;
+  });
+}
+
+function renderStats() {
+  const total = errors.length;
+  const open = errors.filter(e=>e.status==='Open').length;
+  const working = errors.filter(e=>e.status==='Working').length;
+  const resolved = errors.filter(e=>e.status==='Resolved').length;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card total"><div class="label">Total Errors</div><div class="value">${total}</div></div>
+    <div class="stat-card open"><div class="label">Open</div><div class="value">${open}</div></div>
+    <div class="stat-card working"><div class="label">Working</div><div class="value">${working}</div></div>
+    <div class="stat-card resolved"><div class="label">Resolved</div><div class="value">${resolved}</div></div>
+  `;
+}
+
+function renderProgress() {
+  const sections = ['Verbal','Quant','AWA'];
+  const colors = { Verbal: '#7c3aed', Quant: '#0891b2', AWA: '#ea580c' };
+  const bars = sections.map(sec => {
+    const sub = errors.filter(e=>e.section===sec);
+    if (!sub.length) return `<div class="section-bar-row"><span class="name" style="color:${colors[sec]}">${sec}</span><div class="section-big-bar"><div class="section-big-fill" style="width:0%;background:${colors[sec]};"></div></div><span class="pct">—</span></div>`;
+    const avg = Math.round(sub.reduce((a,e)=>a+(e.mastery||0),0)/sub.length);
+    return `<div class="section-bar-row"><span class="name" style="color:${colors[sec]}">${sec}</span><div class="section-big-bar"><div class="section-big-fill" style="width:${avg}%;background:${colors[sec]};"></div></div><span class="pct">${avg}%</span></div>`;
+  }).join('');
+  document.getElementById('sectionBars').innerHTML = bars;
+  const overall = errors.length ? Math.round(errors.reduce((a,e)=>a+(e.mastery||0),0)/errors.length) : 0;
+  document.getElementById('overallMastery').textContent = errors.length ? `Overall avg: ${overall}%` : '';
+}
+
+function renderTags() {
+  const tagMap = {};
+  errors.forEach(e=>(e.tags||[]).forEach(t=>{tagMap[t]=(tagMap[t]||0)+1;}));
+  const tags = Object.entries(tagMap).sort((a,b)=>b[1]-a[1]).slice(0,20);
+  const tl = document.getElementById('tagList');
+  if (!tags.length) { tl.innerHTML=''; return; }
+  tl.innerHTML = tags.map(([t,c])=>`<span class="tag ${activeTag===t?'active':''}" onclick="toggleTag('${t}')">${t} <span style="opacity:0.6">${c}</span></span>`).join('');
+}
+
+function toggleTag(t) {
+  activeTag = activeTag === t ? null : t;
+  currentPage = 1;
+  renderTable();
+  renderTags();
+}
+
+function renderTable() {
+  currentPage = 1;
+  _renderTable();
+}
+
+function _renderTable() {
+  const filtered = getSorted(getFiltered());
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total/PER_PAGE));
+  currentPage = Math.min(currentPage, pages);
+  const slice = filtered.slice((currentPage-1)*PER_PAGE, currentPage*PER_PAGE);
+
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = slice.map((e,i) => {
+    const mc = masteryColor(e.mastery||0);
+    return `<tr onclick="openDetail('${e.id}')">
+      <td class="col-id">${(currentPage-1)*PER_PAGE+i+1}</td>
+      <td class="col-section">${sectionBadge(e.section)}</td>
+      <td class="col-type"><span style="font-size:11px;color:var(--text2);">${e.type}</span></td>
+      <td class="col-question">
+        <div class="q-title">${e.question.length>45?e.question.slice(0,45)+'…':e.question}</div>
+        ${e.takeaway?`<div class="q-text">${e.takeaway.slice(0,60)}${e.takeaway.length>60?'…':''}</div>`:''}
+      </td>
+      <td class="col-status">${statusBadge(e.status)}</td>
+      <td class="col-priority">${prioBadge(e.priority)}</td>
+      <td class="col-mastery">
+        <div class="mastery-wrap">
+          <div class="mastery-bar"><div class="mastery-fill" style="width:${e.mastery||0}%;background:${mc};"></div></div>
+          <span class="mastery-label">${e.mastery||0}%</span>
+        </div>
+      </td>
+      <td class="col-date">${e.date||''}</td>
+      <td class="col-actions" onclick="event.stopPropagation()">
+        <button class="row-action-btn" onclick="openEditModal('${e.id}')" title="Edit">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Pagination
+  const pg = document.getElementById('pagination');
+  if (pages <= 1) { pg.innerHTML = ''; return; }
+  let html = `<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">← Prev</button>`;
+  for (let p=1;p<=pages;p++) {
+    if (pages<=7 || Math.abs(p-currentPage)<=2 || p===1 || p===pages) {
+      html += `<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+    } else if (Math.abs(p-currentPage)===3) {
+      html += `<span style="color:var(--text3);padding:0 4px;">…</span>`;
+    }
+  }
+  html += `<button class="page-btn" ${currentPage===pages?'disabled':''} onclick="goPage(${currentPage+1})">Next →</button>`;
+  pg.innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; _renderTable(); }
+
+function renderAll() { renderStats(); renderProgress(); renderTags(); renderTable(); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = '✓ ' + msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+function exportCSV() {
+  if (!errors.length) { alert('No errors to export.'); return; }
+  const cols = ['id','date','section','type','question','your_answer','correct','why','takeaway','status','priority','mastery','tags'];
+  const rows = errors.map(e => cols.map(c => {
+    let v = c==='tags' ? (e.tags||[]).join(';') : (e[c]||'');
+    return '"' + String(v).replace(/"/g,'""') + '"';
+  }).join(','));
+  const csv = [cols.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'gre_error_log.csv';
+  a.click();
+}
+
+// Section type sync
+document.getElementById('f_section').addEventListener('change', function() {
+  const opts = SECTION_TYPES[this.value]||[];
+  const sel = document.getElementById('f_type');
+  sel.innerHTML = opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+});
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', function(e) { if(e.target===this) this.classList.remove('active'); });
+});
+
+// Seed demo data if empty
+function seedDemo() {
+  if (errors.length) return;
+  const demo = [
+    {id:genId(),section:'Verbal',type:'Text Completion',question:'Garrulous means talkative — confused with taciturn',your_answer:'Taciturn','correct':'Garrulous',why:'Mixed up antonyms — selected the opposite meaning word.',takeaway:'Garrulous = excessively talkative. Taciturn = reserved, quiet.',priority:'High',status:'Working',tags:['vocabulary','antonyms'],mastery:40,date:'2025-04-01'},
+    {id:genId(),section:'Verbal',type:'Reading Comprehension',question:'Main purpose of the passage about coral reefs',your_answer:'Describe the biology','correct':'Critique the conservation approach',why:'Focused on surface detail, missed the author\'s argumentative intent.',takeaway:'Always identify the author\'s TONE and PURPOSE — not just what is described.',priority:'High',status:'Open',tags:['reading-comp','main-idea'],mastery:20,date:'2025-04-03'},
+    {id:genId(),section:'Quant',type:'Quantitative Comparison',question:'Comparing exponents: x^3 vs x^4 when x is unknown',your_answer:'Column B always larger','correct':'Cannot be determined',why:'Forgot to test negative values and fractions.',takeaway:'Always test: x=0, x=1, x=-1, x=0.5 before concluding in QC.',priority:'High',status:'Working',tags:['exponents','QC-strategy'],mastery:55,date:'2025-04-05'},
+    {id:genId(),section:'Quant',type:'Problem Solving',question:'Work-rate problem: two pipes filling a tank',your_answer:'6 hours','correct':'3.75 hours',why:'Used incorrect formula — added rates but divided incorrectly.',takeaway:'Work rate: 1/t = 1/t1 + 1/t2. Combined time = (t1×t2)/(t1+t2).',priority:'Medium',status:'Resolved',tags:['work-rate','formula'],mastery:90,date:'2025-04-07'},
+    {id:genId(),section:'Verbal',type:'Sentence Equivalence',question:'The scientist\'s ___ methodology earned criticism',your_answer:'rigorous','correct':'hidebound / inflexible',why:'Selected positive word for a negative context cue.',takeaway:'Check the sentence tone. "Earned criticism" signals negative blank.',priority:'Medium',status:'Open',tags:['vocabulary','tone'],mastery:30,date:'2025-04-09'},
+    {id:genId(),section:'Quant',type:'Data Interpretation',question:'Percentage change calculation from bar chart 2018→2022',your_answer:'18%','correct':'22.5%',why:'Used absolute value instead of percentage of original.',takeaway:'% change = (new−old)/old × 100. Always divide by the ORIGINAL.',priority:'High',status:'Working',tags:['percent-change','data-interp'],mastery:60,date:'2025-04-10'},
+    {id:genId(),section:'AWA',type:'Argument Essay',question:'Failed to identify all logical flaws in sample argument',your_answer:'Identified 2 flaws','correct':'4+ flaws expected',why:'Rushed the reading and missed causal fallacy and sampling issue.',takeaway:'Checklist: causal fallacy, sample size, unverified assumption, scope shift, analogy flaw.',priority:'Medium',status:'Open',tags:['AWA','logical-flaws'],mastery:35,date:'2025-04-12'},
+  ];
+  errors = demo;
+  save();
+}
+
+seedDemo();
+renderAll();
+</script>
+</body>
+</html>
