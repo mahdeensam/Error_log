@@ -64,6 +64,22 @@
 
   .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
 
+  /* Loading overlay */
+  #loadingOverlay {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 999; font-family: var(--mono); color: var(--text3); font-size: 13px;
+    flex-direction: column; gap: 12px;
+  }
+  #loadingOverlay .spinner {
+    width: 28px; height: 28px;
+    border: 3px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   /* Header */
   header {
     display: flex;
@@ -417,6 +433,7 @@
     box-shadow: 0 4px 20px rgba(22,160,88,0.2);
   }
   .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error-toast { border-color: var(--red); color: var(--red); box-shadow: 0 4px 20px rgba(229,62,94,0.2); }
 
   /* Progress section */
   .progress-section {
@@ -478,7 +495,14 @@
 </style>
 </head>
 <body>
-<div class="app">
+
+<!-- Loading overlay -->
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <span>Loading your error log…</span>
+</div>
+
+<div class="app" style="display:none;" id="mainApp">
 
   <!-- Header -->
   <header>
@@ -679,8 +703,10 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const STORAGE_KEY = 'gre_errors_v2';
-let errors = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+// ─── Storage layer using window.storage (persistent across sessions) ───────────
+const STORAGE_KEY = 'gre_errors_v3';
+
+let errors = [];
 let editingId = null;
 let activeTag = null;
 let currentPage = 1;
@@ -692,15 +718,43 @@ const SECTION_TYPES = {
   AWA: ['Argument Essay','Issue Essay']
 };
 
-function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(errors)); }
+// ── Persistent storage helpers ─────────────────────────────────────────────────
+async function loadFromStorage() {
+  try {
+    const result = await window.storage.get(STORAGE_KEY);
+    if (result && result.value) {
+      errors = JSON.parse(result.value);
+    } else {
+      errors = [];
+    }
+  } catch (e) {
+    // Key doesn't exist yet — start empty
+    errors = [];
+  }
+}
 
+async function saveToStorage() {
+  try {
+    await window.storage.set(STORAGE_KEY, JSON.stringify(errors));
+  } catch (e) {
+    showToast('⚠ Save failed — storage error', true);
+    console.error('Storage save error:', e);
+  }
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
-function openAddModal(id) {
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+
+// ── Modal open/close ──────────────────────────────────────────────────────────
+function openAddModal() {
   editingId = null;
   document.getElementById('modalTitle').textContent = 'Log New Error';
   document.getElementById('f_section').value = 'Verbal';
-  document.getElementById('f_type').value = 'Text Completion';
+  updateTypeOptions('Verbal');
   document.getElementById('f_question').value = '';
   document.getElementById('f_your_answer').value = '';
   document.getElementById('f_correct').value = '';
@@ -720,6 +774,7 @@ function openEditModal(id) {
   editingId = id;
   document.getElementById('modalTitle').textContent = 'Edit Error';
   document.getElementById('f_section').value = e.section;
+  updateTypeOptions(e.section);
   document.getElementById('f_type').value = e.type;
   document.getElementById('f_question').value = e.question;
   document.getElementById('f_your_answer').value = e.your_answer || '';
@@ -728,20 +783,29 @@ function openEditModal(id) {
   document.getElementById('f_takeaway').value = e.takeaway || '';
   document.getElementById('f_priority').value = e.priority;
   document.getElementById('f_status').value = e.status;
-  document.getElementById('f_tags').value = (e.tags||[]).join(', ');
+  document.getElementById('f_tags').value = (e.tags || []).join(', ');
   document.getElementById('f_mastery').value = e.mastery || 0;
-  document.getElementById('masteryDisplay').textContent = (e.mastery||0) + '%';
+  document.getElementById('masteryDisplay').textContent = (e.mastery || 0) + '%';
   closeModal('detailModal');
   document.getElementById('addModal').classList.add('active');
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-function saveError() {
+function updateTypeOptions(section) {
+  const opts = SECTION_TYPES[section] || [];
+  const sel = document.getElementById('f_type');
+  sel.innerHTML = opts.map(o => `<option value="${o}">${o}</option>`).join('');
+}
+
+// ── Save / Delete ─────────────────────────────────────────────────────────────
+async function saveError() {
   const q = document.getElementById('f_question').value.trim();
   if (!q) { alert('Please enter a question or topic.'); return; }
   const tagsRaw = document.getElementById('f_tags').value;
-  const tags = tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
+  const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
+  const isEdit = !!editingId;
   const entry = {
     id: editingId || genId(),
     section: document.getElementById('f_section').value,
@@ -753,40 +817,40 @@ function saveError() {
     takeaway: document.getElementById('f_takeaway').value.trim(),
     priority: document.getElementById('f_priority').value,
     status: document.getElementById('f_status').value,
-    tags: tags,
+    tags,
     mastery: parseInt(document.getElementById('f_mastery').value),
-    date: editingId ? (errors.find(x=>x.id===editingId)||{}).date || today() : today(),
+    date: isEdit ? (errors.find(x => x.id === editingId) || {}).date || today() : today(),
     updated: today()
   };
-  if (editingId) {
-    const idx = errors.findIndex(x=>x.id===editingId);
+
+  if (isEdit) {
+    const idx = errors.findIndex(x => x.id === editingId);
     if (idx !== -1) errors[idx] = entry;
   } else {
     errors.unshift(entry);
   }
-  save();
+
+  await saveToStorage();
   closeModal('addModal');
   editingId = null;
   renderAll();
-  showToast(editingId ? 'Error updated' : 'Error logged');
+  showToast(isEdit ? 'Error updated' : 'Error logged');
 }
 
-function today() {
-  const d = new Date();
-  return d.toISOString().slice(0,10);
-}
-
-function deleteError(id) {
+async function deleteError(id) {
   errors = errors.filter(x => x.id !== id);
-  save(); closeModal('detailModal'); renderAll();
+  await saveToStorage();
+  closeModal('detailModal');
+  renderAll();
   showToast('Error deleted');
 }
 
+// ── Detail modal ──────────────────────────────────────────────────────────────
 function openDetail(id) {
-  const e = errors.find(x=>x.id===id);
+  const e = errors.find(x => x.id === id);
   if (!e) return;
-  document.getElementById('detailTitle').textContent = e.question.slice(0,50)+(e.question.length>50?'...':'');
-  const mc = masteryColor(e.mastery||0);
+  document.getElementById('detailTitle').textContent = e.question.slice(0,50) + (e.question.length > 50 ? '...' : '');
+  const mc = masteryColor(e.mastery || 0);
   document.getElementById('detailContent').innerHTML = `
     <div class="detail-section">
       <div class="detail-meta-grid">
@@ -806,7 +870,7 @@ function openDetail(id) {
         </div>
       </div>
     </div>
-    ${e.your_answer||e.correct ? `<div class="detail-section">
+    ${e.your_answer || e.correct ? `<div class="detail-section">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div><h3>Your answer</h3><div class="detail-note ${!e.your_answer?'empty':''}">${e.your_answer||'Not recorded'}</div></div>
         <div><h3>Correct answer</h3><div class="detail-note ${!e.correct?'empty':''}">${e.correct||'Not recorded'}</div></div>
@@ -820,19 +884,19 @@ function openDetail(id) {
       <h3>Key takeaway / fix</h3>
       <div class="detail-note ${!e.takeaway?'empty':''}">${e.takeaway || 'No takeaway recorded.'}</div>
     </div>
-    ${e.tags&&e.tags.length ? `<div class="detail-section"><h3>Tags</h3><div class="tag-list">${e.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div></div>` : ''}
+    ${e.tags && e.tags.length ? `<div class="detail-section"><h3>Tags</h3><div class="tag-list">${e.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div></div>` : ''}
   `;
   document.getElementById('detailEditBtn').onclick = () => openEditModal(id);
-  document.getElementById('detailDeleteBtn').onclick = () => { if(confirm('Delete this error?')) deleteError(id); };
+  document.getElementById('detailDeleteBtn').onclick = () => { if (confirm('Delete this error?')) deleteError(id); };
   document.getElementById('detailModal').classList.add('active');
 }
 
+// ── Badges ────────────────────────────────────────────────────────────────────
 function masteryColor(v) {
   if (v < 33) return '#e53e5e';
   if (v < 66) return '#d97706';
   return '#16a058';
 }
-
 function statusBadge(s) {
   const map = {Open:'badge-open',Working:'badge-working',Resolved:'badge-resolved'};
   return `<span class="badge ${map[s]||''}">${s}</span>`;
@@ -846,6 +910,7 @@ function prioBadge(p) {
   return `<span class="badge ${map[p]||''}">${p}</span>`;
 }
 
+// ── Filtering / sorting ───────────────────────────────────────────────────────
 function getFiltered() {
   const q = document.getElementById('searchInput').value.toLowerCase();
   const sec = document.getElementById('filterSection').value;
@@ -855,30 +920,37 @@ function getFiltered() {
     if (sec && e.section !== sec) return false;
     if (stat && e.status !== stat) return false;
     if (prio && e.priority !== prio) return false;
-    if (activeTag && !(e.tags||[]).includes(activeTag)) return false;
-    if (q && !(e.question.toLowerCase().includes(q) || (e.why||'').toLowerCase().includes(q) || (e.takeaway||'').toLowerCase().includes(q) || (e.tags||[]).join(' ').toLowerCase().includes(q) || e.type.toLowerCase().includes(q))) return false;
+    if (activeTag && !(e.tags || []).includes(activeTag)) return false;
+    if (q && !(
+      e.question.toLowerCase().includes(q) ||
+      (e.why||'').toLowerCase().includes(q) ||
+      (e.takeaway||'').toLowerCase().includes(q) ||
+      (e.tags||[]).join(' ').toLowerCase().includes(q) ||
+      e.type.toLowerCase().includes(q)
+    )) return false;
     return true;
   });
 }
 
 function getSorted(arr) {
   const s = document.getElementById('sortBy').value;
-  const pMap = {High:0,Medium:1,Low:2};
+  const pMap = {High:0, Medium:1, Low:2};
   return [...arr].sort((a,b) => {
-    if (s==='date_desc') return (b.date||'') > (a.date||'') ? 1 : -1;
-    if (s==='date_asc') return (a.date||'') > (b.date||'') ? 1 : -1;
-    if (s==='mastery_asc') return (a.mastery||0)-(b.mastery||0);
-    if (s==='mastery_desc') return (b.mastery||0)-(a.mastery||0);
-    if (s==='priority') return (pMap[a.priority]||1)-(pMap[b.priority]||1);
+    if (s === 'date_desc') return (b.date||'') > (a.date||'') ? 1 : -1;
+    if (s === 'date_asc')  return (a.date||'') > (b.date||'') ? 1 : -1;
+    if (s === 'mastery_asc')  return (a.mastery||0) - (b.mastery||0);
+    if (s === 'mastery_desc') return (b.mastery||0) - (a.mastery||0);
+    if (s === 'priority') return (pMap[a.priority]||1) - (pMap[b.priority]||1);
     return 0;
   });
 }
 
+// ── Render helpers ────────────────────────────────────────────────────────────
 function renderStats() {
-  const total = errors.length;
-  const open = errors.filter(e=>e.status==='Open').length;
-  const working = errors.filter(e=>e.status==='Working').length;
-  const resolved = errors.filter(e=>e.status==='Resolved').length;
+  const total    = errors.length;
+  const open     = errors.filter(e => e.status === 'Open').length;
+  const working  = errors.filter(e => e.status === 'Working').length;
+  const resolved = errors.filter(e => e.status === 'Resolved').length;
   document.getElementById('statsRow').innerHTML = `
     <div class="stat-card total"><div class="label">Total Errors</div><div class="value">${total}</div></div>
     <div class="stat-card open"><div class="label">Open</div><div class="value">${open}</div></div>
@@ -889,25 +961,25 @@ function renderStats() {
 
 function renderProgress() {
   const sections = ['Verbal','Quant','AWA'];
-  const colors = { Verbal: '#7c3aed', Quant: '#0891b2', AWA: '#ea580c' };
+  const colors = { Verbal:'#7c3aed', Quant:'#0891b2', AWA:'#ea580c' };
   const bars = sections.map(sec => {
-    const sub = errors.filter(e=>e.section===sec);
+    const sub = errors.filter(e => e.section === sec);
     if (!sub.length) return `<div class="section-bar-row"><span class="name" style="color:${colors[sec]}">${sec}</span><div class="section-big-bar"><div class="section-big-fill" style="width:0%;background:${colors[sec]};"></div></div><span class="pct">—</span></div>`;
-    const avg = Math.round(sub.reduce((a,e)=>a+(e.mastery||0),0)/sub.length);
+    const avg = Math.round(sub.reduce((a,e) => a + (e.mastery||0), 0) / sub.length);
     return `<div class="section-bar-row"><span class="name" style="color:${colors[sec]}">${sec}</span><div class="section-big-bar"><div class="section-big-fill" style="width:${avg}%;background:${colors[sec]};"></div></div><span class="pct">${avg}%</span></div>`;
   }).join('');
   document.getElementById('sectionBars').innerHTML = bars;
-  const overall = errors.length ? Math.round(errors.reduce((a,e)=>a+(e.mastery||0),0)/errors.length) : 0;
+  const overall = errors.length ? Math.round(errors.reduce((a,e) => a + (e.mastery||0), 0) / errors.length) : 0;
   document.getElementById('overallMastery').textContent = errors.length ? `Overall avg: ${overall}%` : '';
 }
 
 function renderTags() {
   const tagMap = {};
-  errors.forEach(e=>(e.tags||[]).forEach(t=>{tagMap[t]=(tagMap[t]||0)+1;}));
-  const tags = Object.entries(tagMap).sort((a,b)=>b[1]-a[1]).slice(0,20);
+  errors.forEach(e => (e.tags||[]).forEach(t => { tagMap[t] = (tagMap[t]||0) + 1; }));
+  const tags = Object.entries(tagMap).sort((a,b) => b[1]-a[1]).slice(0,20);
   const tl = document.getElementById('tagList');
-  if (!tags.length) { tl.innerHTML=''; return; }
-  tl.innerHTML = tags.map(([t,c])=>`<span class="tag ${activeTag===t?'active':''}" onclick="toggleTag('${t}')">${t} <span style="opacity:0.6">${c}</span></span>`).join('');
+  if (!tags.length) { tl.innerHTML = ''; return; }
+  tl.innerHTML = tags.map(([t,c]) => `<span class="tag ${activeTag===t?'active':''}" onclick="toggleTag('${t}')">${t} <span style="opacity:0.6">${c}</span></span>`).join('');
 }
 
 function toggleTag(t) {
@@ -925,7 +997,7 @@ function renderTable() {
 function _renderTable() {
   const filtered = getSorted(getFiltered());
   const total = filtered.length;
-  const pages = Math.max(1, Math.ceil(total/PER_PAGE));
+  const pages = Math.max(1, Math.ceil(total / PER_PAGE));
   currentPage = Math.min(currentPage, pages);
   const slice = filtered.slice((currentPage-1)*PER_PAGE, currentPage*PER_PAGE);
 
@@ -971,10 +1043,10 @@ function _renderTable() {
   const pg = document.getElementById('pagination');
   if (pages <= 1) { pg.innerHTML = ''; return; }
   let html = `<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})">← Prev</button>`;
-  for (let p=1;p<=pages;p++) {
-    if (pages<=7 || Math.abs(p-currentPage)<=2 || p===1 || p===pages) {
+  for (let p = 1; p <= pages; p++) {
+    if (pages <= 7 || Math.abs(p-currentPage) <= 2 || p === 1 || p === pages) {
       html += `<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
-    } else if (Math.abs(p-currentPage)===3) {
+    } else if (Math.abs(p-currentPage) === 3) {
       html += `<span style="color:var(--text3);padding:0 4px;">…</span>`;
     }
   }
@@ -986,18 +1058,21 @@ function goPage(p) { currentPage = p; _renderTable(); }
 
 function renderAll() { renderStats(); renderProgress(); renderTags(); renderTable(); }
 
-function showToast(msg) {
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
-  t.textContent = '✓ ' + msg;
+  t.textContent = (isError ? '⚠ ' : '✓ ') + msg;
+  t.className = 'toast' + (isError ? ' error-toast' : '');
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2500);
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+// ── Export ────────────────────────────────────────────────────────────────────
 function exportCSV() {
   if (!errors.length) { alert('No errors to export.'); return; }
   const cols = ['id','date','section','type','question','your_answer','correct','why','takeaway','status','priority','mastery','tags'];
   const rows = errors.map(e => cols.map(c => {
-    let v = c==='tags' ? (e.tags||[]).join(';') : (e[c]||'');
+    const v = c === 'tags' ? (e.tags||[]).join(';') : (e[c]||'');
     return '"' + String(v).replace(/"/g,'""') + '"';
   }).join(','));
   const csv = [cols.join(','), ...rows].join('\n');
@@ -1007,36 +1082,23 @@ function exportCSV() {
   a.click();
 }
 
-// Section type sync
+// ── Section → type sync ───────────────────────────────────────────────────────
 document.getElementById('f_section').addEventListener('change', function() {
-  const opts = SECTION_TYPES[this.value]||[];
-  const sel = document.getElementById('f_type');
-  sel.innerHTML = opts.map(o=>`<option value="${o}">${o}</option>`).join('');
+  updateTypeOptions(this.value);
 });
 
 // Close modal on overlay click
 document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', function(e) { if(e.target===this) this.classList.remove('active'); });
+  m.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
 });
 
-// Seed demo data if empty
-function seedDemo() {
-  if (errors.length) return;
-  const demo = [
-    {id:genId(),section:'Verbal',type:'Text Completion',question:'Garrulous means talkative — confused with taciturn',your_answer:'Taciturn','correct':'Garrulous',why:'Mixed up antonyms — selected the opposite meaning word.',takeaway:'Garrulous = excessively talkative. Taciturn = reserved, quiet.',priority:'High',status:'Working',tags:['vocabulary','antonyms'],mastery:40,date:'2025-04-01'},
-    {id:genId(),section:'Verbal',type:'Reading Comprehension',question:'Main purpose of the passage about coral reefs',your_answer:'Describe the biology','correct':'Critique the conservation approach',why:'Focused on surface detail, missed the author\'s argumentative intent.',takeaway:'Always identify the author\'s TONE and PURPOSE — not just what is described.',priority:'High',status:'Open',tags:['reading-comp','main-idea'],mastery:20,date:'2025-04-03'},
-    {id:genId(),section:'Quant',type:'Quantitative Comparison',question:'Comparing exponents: x^3 vs x^4 when x is unknown',your_answer:'Column B always larger','correct':'Cannot be determined',why:'Forgot to test negative values and fractions.',takeaway:'Always test: x=0, x=1, x=-1, x=0.5 before concluding in QC.',priority:'High',status:'Working',tags:['exponents','QC-strategy'],mastery:55,date:'2025-04-05'},
-    {id:genId(),section:'Quant',type:'Problem Solving',question:'Work-rate problem: two pipes filling a tank',your_answer:'6 hours','correct':'3.75 hours',why:'Used incorrect formula — added rates but divided incorrectly.',takeaway:'Work rate: 1/t = 1/t1 + 1/t2. Combined time = (t1×t2)/(t1+t2).',priority:'Medium',status:'Resolved',tags:['work-rate','formula'],mastery:90,date:'2025-04-07'},
-    {id:genId(),section:'Verbal',type:'Sentence Equivalence',question:'The scientist\'s ___ methodology earned criticism',your_answer:'rigorous','correct':'hidebound / inflexible',why:'Selected positive word for a negative context cue.',takeaway:'Check the sentence tone. "Earned criticism" signals negative blank.',priority:'Medium',status:'Open',tags:['vocabulary','tone'],mastery:30,date:'2025-04-09'},
-    {id:genId(),section:'Quant',type:'Data Interpretation',question:'Percentage change calculation from bar chart 2018→2022',your_answer:'18%','correct':'22.5%',why:'Used absolute value instead of percentage of original.',takeaway:'% change = (new−old)/old × 100. Always divide by the ORIGINAL.',priority:'High',status:'Working',tags:['percent-change','data-interp'],mastery:60,date:'2025-04-10'},
-    {id:genId(),section:'AWA',type:'Argument Essay',question:'Failed to identify all logical flaws in sample argument',your_answer:'Identified 2 flaws','correct':'4+ flaws expected',why:'Rushed the reading and missed causal fallacy and sampling issue.',takeaway:'Checklist: causal fallacy, sample size, unverified assumption, scope shift, analogy flaw.',priority:'Medium',status:'Open',tags:['AWA','logical-flaws'],mastery:35,date:'2025-04-12'},
-  ];
-  errors = demo;
-  save();
-}
-
-seedDemo();
-renderAll();
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+(async function init() {
+  await loadFromStorage();
+  document.getElementById('loadingOverlay').style.display = 'none';
+  document.getElementById('mainApp').style.display = '';
+  renderAll();
+})();
 </script>
 </body>
 </html>
