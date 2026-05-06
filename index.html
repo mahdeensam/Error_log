@@ -487,10 +487,381 @@
   .page-btn.active { background: linear-gradient(135deg, var(--accent), #8b5cf6); border-color: transparent; color: #fff; box-shadow: 0 2px 8px rgba(91,94,245,0.3); }
   .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
+  /* ── Vocab Sidebar ───────────────────────────────────────────────────────── */
+  .vocab-toggle {
+    position: fixed;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px 0 0 12px;
+    padding: 14px 10px;
+    cursor: pointer;
+    z-index: 90;
+    box-shadow: -3px 4px 16px rgba(124, 58, 237, 0.3);
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+  .vocab-toggle:hover { padding-right: 14px; box-shadow: -4px 6px 20px rgba(124, 58, 237, 0.45); }
+  .vocab-toggle .vocab-count {
+    background: rgba(255,255,255,0.25);
+    border-radius: 100px;
+    padding: 2px 7px;
+    font-size: 10px;
+    font-family: var(--mono);
+    writing-mode: horizontal-tb;
+  }
+
+  .vocab-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 420px;
+    max-width: 90vw;
+    height: 100vh;
+    background: var(--surface);
+    border-left: 1.5px solid var(--border2);
+    box-shadow: -8px 0 32px rgba(91,94,245,0.15);
+    z-index: 95;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+    display: flex;
+    flex-direction: column;
+  }
+  .vocab-sidebar.open { transform: translateX(0); }
+
+  .vocab-header {
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1.5px solid var(--border);
+    background: linear-gradient(135deg, rgba(124,58,237,0.04), rgba(219,39,119,0.04));
+  }
+  .vocab-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .vocab-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.4px;
+  }
+  .vocab-header p {
+    color: var(--text3);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .vocab-add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .vocab-add-form input,
+  .vocab-add-form textarea {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+  }
+  .vocab-add-form textarea {
+    font-family: var(--serif);
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 50px;
+  }
+  .vocab-add-form input:focus,
+  .vocab-add-form textarea:focus {
+    border-color: var(--purple);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
+    background: #fff;
+  }
+  .vocab-add-form .btn-add {
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 9px 16px;
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 2px 8px rgba(124,58,237,0.25);
+  }
+  .vocab-add-form .btn-add:hover { box-shadow: 0 4px 14px rgba(124,58,237,0.4); }
+  .vocab-add-form .btn-add:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .vocab-word-input-row {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+  }
+  .vocab-word-input-row input { flex: 1; }
+  .vocab-fetch-btn {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--purple);
+    padding: 0 12px;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .vocab-fetch-btn:hover { border-color: var(--purple); background: var(--purple-bg); }
+  .vocab-fetch-btn:disabled { opacity: 0.5; cursor: wait; }
+  .vocab-fetch-btn .spinner-mini {
+    width: 12px; height: 12px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--purple);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+  .vocab-fetch-hint {
+    font-size: 10px;
+    color: var(--text3);
+    font-style: italic;
+    margin-top: -2px;
+  }
+
+  /* Export menu */
+  .vocab-header-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .vocab-icon-btn {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .vocab-icon-btn:hover { color: var(--purple); border-color: var(--purple); background: var(--purple-bg); }
+
+  .export-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--border2);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(91,94,245,0.18);
+    padding: 6px;
+    min-width: 170px;
+    z-index: 100;
+    display: none;
+  }
+  .export-menu.show { display: block; }
+  .export-menu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: var(--font);
+    font-size: 12px;
+    color: var(--text2);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.12s;
+  }
+  .export-menu button:hover { background: var(--purple-bg); color: var(--purple); }
+  .export-menu .menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .export-menu .menu-label { font-size: 9px; text-transform: uppercase; color: var(--text3); padding: 6px 10px 2px; letter-spacing: 1px; font-weight: 700; }
+
+  .vocab-search-wrap {
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1.5px solid var(--border);
+    position: relative;
+  }
+  .vocab-search-wrap input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 8px 12px 8px 32px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .vocab-search-wrap input:focus { border-color: var(--purple); background: #fff; }
+  .vocab-search-wrap svg {
+    position: absolute;
+    left: calc(1.5rem + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.4;
+    color: var(--purple);
+    pointer-events: none;
+  }
+
+  .vocab-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem 1.5rem 2rem;
+  }
+  .vocab-list::-webkit-scrollbar { width: 6px; }
+  .vocab-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+  .vocab-item {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    transition: all 0.15s;
+    box-shadow: 0 1px 4px rgba(99,102,180,0.06);
+    position: relative;
+  }
+  .vocab-item:hover {
+    border-color: var(--purple);
+    box-shadow: 0 4px 14px rgba(124,58,237,0.12);
+    transform: translateY(-1px);
+  }
+  .vocab-item .vocab-word-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .vocab-item .vocab-word {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--purple);
+    letter-spacing: -0.2px;
+  }
+  .vocab-item .vocab-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .vocab-item:hover .vocab-actions { opacity: 1; }
+  .vocab-item .vocab-action-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text3);
+    width: 24px; height: 24px;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    padding: 0;
+  }
+  .vocab-item .vocab-action-btn:hover { color: var(--purple); border-color: var(--purple); }
+  .vocab-item .vocab-action-btn.del:hover { color: var(--red); border-color: var(--red); background: var(--red-bg); }
+  .vocab-item .vocab-def {
+    font-family: var(--serif);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text2);
+    white-space: pre-wrap;
+  }
+  .vocab-item .vocab-def.empty { font-style: italic; color: var(--text3); }
+  .vocab-item .vocab-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+  }
+
+  /* Inline edit state */
+  .vocab-item.editing input,
+  .vocab-item.editing textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1.5px solid var(--purple);
+    border-radius: 6px;
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 6px 8px;
+    outline: none;
+    margin-bottom: 6px;
+  }
+  .vocab-item.editing textarea { font-family: var(--serif); min-height: 50px; resize: vertical; line-height: 1.5; }
+  .vocab-item.editing .vocab-edit-actions { display: flex; gap: 6px; margin-top: 4px; }
+  .vocab-item.editing .vocab-edit-actions button {
+    flex: 1;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+  .vocab-item.editing .vocab-edit-actions button.save {
+    background: linear-gradient(135deg, var(--purple), var(--pink));
+    color: #fff;
+    border-color: transparent;
+  }
+
+  .vocab-empty {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--text3);
+  }
+  .vocab-empty p { font-size: 14px; margin-bottom: 6px; color: var(--text2); }
+  .vocab-empty span { font-size: 12px; }
+
+  .vocab-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20,20,50,0.3);
+    backdrop-filter: blur(2px);
+    z-index: 94;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .vocab-backdrop.show { opacity: 1; pointer-events: auto; }
+
   @media (max-width: 700px) {
     .form-row { grid-template-columns: 1fr; }
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .col-date, .col-mastery { display: none; }
+    .vocab-sidebar { width: 100vw; }
   }
 </style>
 </head>
@@ -699,6 +1070,63 @@
     </div>
   </div>
 </div>
+
+<!-- ── Vocab Sidebar ──────────────────────────────────────────────────────── -->
+<div class="vocab-backdrop" id="vocabBackdrop" onclick="closeVocabSidebar()"></div>
+
+<button class="vocab-toggle" id="vocabToggle" onclick="openVocabSidebar()" title="Open vocab list">
+  <span>VOCAB</span>
+  <span class="vocab-count" id="vocabCountBadge">0</span>
+</button>
+
+<aside class="vocab-sidebar" id="vocabSidebar">
+  <div class="vocab-header">
+    <div class="vocab-header-top">
+      <div>
+        <h2>📚 My Vocab</h2>
+        <p>Words to remember</p>
+      </div>
+      <div class="vocab-header-actions">
+        <div style="position:relative;">
+          <button class="vocab-icon-btn" onclick="toggleExportMenu(event)" title="Export vocab list">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </button>
+          <div class="export-menu" id="exportMenu">
+            <div class="menu-label">Export as</div>
+            <button onclick="exportVocab('json')">📄 JSON file</button>
+            <button onclick="exportVocab('csv')">📊 CSV (Excel)</button>
+            <button onclick="exportVocab('txt')">📝 Text (.txt)</button>
+            <button onclick="exportVocab('md')">📑 Markdown (.md)</button>
+            <div class="menu-divider"></div>
+            <button onclick="exportVocab('clipboard')">📋 Copy to clipboard</button>
+            <div class="menu-divider"></div>
+            <div class="menu-label">Import</div>
+            <button onclick="document.getElementById('vocabImport').click()">📥 Import JSON</button>
+            <input type="file" id="vocabImport" accept=".json" style="display:none;" onchange="importVocab(event)">
+          </div>
+        </div>
+        <button class="close-btn" onclick="closeVocabSidebar()">×</button>
+      </div>
+    </div>
+    <div class="vocab-add-form">
+      <div class="vocab-word-input-row">
+        <input type="text" id="vocabWordInput" placeholder="Word (e.g., impenetrable)" onkeydown="if(event.key==='Enter')document.getElementById('vocabDefInput').focus()">
+        <button class="vocab-fetch-btn" id="vocabFetchBtn" onclick="fetchDefinition()" title="Auto-fetch definition from dictionary">
+          <span id="vocabFetchIcon">✨</span>
+          <span id="vocabFetchLabel">Fetch</span>
+        </button>
+      </div>
+      <div class="vocab-fetch-hint">Tip: type a word and click <b>Fetch</b> for an instant definition</div>
+      <textarea id="vocabDefInput" placeholder="Definition / meaning / example sentence..." onkeydown="if(event.key==='Enter'&&event.ctrlKey)addVocab()"></textarea>
+      <button class="btn-add" onclick="addVocab()">+ Add Word</button>
+    </div>
+  </div>
+  <div class="vocab-search-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="vocabSearchInput" placeholder="Search words..." oninput="renderVocab()">
+  </div>
+  <div class="vocab-list" id="vocabList"></div>
+</aside>
 
 <div class="toast" id="toast"></div>
 
@@ -1092,12 +1520,385 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
   m.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
 });
 
+// ── Vocab Sidebar ─────────────────────────────────────────────────────────────
+const VOCAB_STORAGE_KEY = 'gre_vocab_v1';
+let vocabList = [];
+let vocabEditingId = null;
+
+function loadVocab() {
+  try {
+    const raw = localStorage.getItem(VOCAB_STORAGE_KEY);
+    vocabList = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    vocabList = [];
+  }
+}
+
+function saveVocab() {
+  try {
+    localStorage.setItem(VOCAB_STORAGE_KEY, JSON.stringify(vocabList));
+  } catch (e) {
+    showToast('Vocab save failed', true);
+    console.error('Vocab save error:', e);
+  }
+}
+
+function openVocabSidebar() {
+  document.getElementById('vocabSidebar').classList.add('open');
+  document.getElementById('vocabBackdrop').classList.add('show');
+  setTimeout(() => document.getElementById('vocabWordInput').focus(), 200);
+}
+
+function closeVocabSidebar() {
+  document.getElementById('vocabSidebar').classList.remove('open');
+  document.getElementById('vocabBackdrop').classList.remove('show');
+  vocabEditingId = null;
+  renderVocab();
+}
+
+function addVocab() {
+  const wordEl = document.getElementById('vocabWordInput');
+  const defEl  = document.getElementById('vocabDefInput');
+  const word = wordEl.value.trim();
+  const def  = defEl.value.trim();
+  if (!word) { wordEl.focus(); return; }
+
+  // If word already exists, update its definition instead of duplicating
+  const existing = vocabList.find(v => v.word.toLowerCase() === word.toLowerCase());
+  if (existing) {
+    existing.definition = def;
+    existing.updated = today();
+    showToast(`Updated "${word}"`);
+  } else {
+    vocabList.unshift({
+      id: genId(),
+      word,
+      definition: def,
+      added: today(),
+      updated: today()
+    });
+    showToast(`Added "${word}"`);
+  }
+
+  saveVocab();
+  wordEl.value = '';
+  defEl.value = '';
+  wordEl.focus();
+  renderVocab();
+}
+
+function deleteVocab(id) {
+  const v = vocabList.find(x => x.id === id);
+  if (!v) return;
+  if (!confirm(`Delete "${v.word}"?`)) return;
+  vocabList = vocabList.filter(x => x.id !== id);
+  saveVocab();
+  renderVocab();
+  showToast('Word deleted');
+}
+
+// ── Free Dictionary API (api.dictionaryapi.dev) ───────────────────────────────
+// Open-source, no API key, sourced from Wiktionary
+async function fetchDefinition() {
+  const wordEl = document.getElementById('vocabWordInput');
+  const defEl  = document.getElementById('vocabDefInput');
+  const btn = document.getElementById('vocabFetchBtn');
+  const iconEl = document.getElementById('vocabFetchIcon');
+  const labelEl = document.getElementById('vocabFetchLabel');
+
+  const word = wordEl.value.trim();
+  if (!word) {
+    wordEl.focus();
+    showToast('Type a word first', true);
+    return;
+  }
+
+  // Loading state
+  btn.disabled = true;
+  iconEl.outerHTML = '<span class="spinner-mini" id="vocabFetchIcon"></span>';
+  labelEl.textContent = 'Fetching…';
+
+  try {
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        showToast(`No definition found for "${word}"`, true);
+      } else {
+        showToast('Dictionary lookup failed', true);
+      }
+      return;
+    }
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) {
+      showToast(`No definition found for "${word}"`, true);
+      return;
+    }
+
+    // Format the definition nicely from the first entry
+    const entry = data[0];
+    const phonetic = entry.phonetic || (entry.phonetics?.find(p => p.text)?.text) || '';
+
+    const lines = [];
+    if (phonetic) lines.push(phonetic);
+
+    (entry.meanings || []).forEach(m => {
+      const pos = m.partOfSpeech ? `(${m.partOfSpeech})` : '';
+      const defs = (m.definitions || []).slice(0, 2);
+      defs.forEach((d, i) => {
+        const num = defs.length > 1 ? `${i + 1}. ` : '';
+        let line = `${pos ? pos + ' ' : ''}${num}${d.definition}`;
+        if (d.example) line += `\n   e.g. "${d.example}"`;
+        lines.push(line);
+      });
+    });
+
+    // Synonyms (collected from top-level meanings, deduped, capped)
+    const syns = new Set();
+    (entry.meanings || []).forEach(m => (m.synonyms || []).forEach(s => syns.add(s)));
+    if (syns.size) {
+      const synList = [...syns].slice(0, 6).join(', ');
+      lines.push(`\nSynonyms: ${synList}`);
+    }
+
+    defEl.value = lines.join('\n');
+    showToast(`Found definition for "${word}"`);
+  } catch (e) {
+    console.error('Dictionary fetch error:', e);
+    showToast('Network error — check connection', true);
+  } finally {
+    btn.disabled = false;
+    document.getElementById('vocabFetchIcon').outerHTML = '<span id="vocabFetchIcon">✨</span>';
+    document.getElementById('vocabFetchLabel').textContent = 'Fetch';
+  }
+}
+
+// ── Export menu ────────────────────────────────────────────────────────────────
+function toggleExportMenu(e) {
+  e.stopPropagation();
+  document.getElementById('exportMenu').classList.toggle('show');
+}
+
+// Click anywhere else closes the export menu
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('exportMenu');
+  if (menu && menu.classList.contains('show') && !e.target.closest('.export-menu') && !e.target.closest('[onclick*="toggleExportMenu"]')) {
+    menu.classList.remove('show');
+  }
+});
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportVocab(format) {
+  if (!vocabList.length) {
+    showToast('No words to export', true);
+    return;
+  }
+  document.getElementById('exportMenu').classList.remove('show');
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  if (format === 'json') {
+    const json = JSON.stringify(vocabList, null, 2);
+    downloadFile(json, `vocab_${stamp}.json`, 'application/json');
+    showToast(`Exported ${vocabList.length} words as JSON`);
+  }
+  else if (format === 'csv') {
+    const cols = ['word', 'definition', 'added', 'updated'];
+    const escape = v => '"' + String(v || '').replace(/"/g, '""') + '"';
+    const rows = vocabList.map(v => cols.map(c => escape(v[c])).join(','));
+    const csv = [cols.join(','), ...rows].join('\n');
+    downloadFile(csv, `vocab_${stamp}.csv`, 'text/csv;charset=utf-8');
+    showToast(`Exported ${vocabList.length} words as CSV`);
+  }
+  else if (format === 'txt') {
+    const txt = vocabList.map(v =>
+      `${v.word.toUpperCase()}\n${v.definition || '(no definition)'}\n` +
+      `— added ${v.added}\n${'─'.repeat(40)}`
+    ).join('\n\n');
+    const header = `MY VOCAB LIST\nExported ${stamp}\nTotal: ${vocabList.length} words\n${'═'.repeat(40)}\n\n`;
+    downloadFile(header + txt, `vocab_${stamp}.txt`, 'text/plain;charset=utf-8');
+    showToast(`Exported ${vocabList.length} words as TXT`);
+  }
+  else if (format === 'md') {
+    const md = vocabList.map(v =>
+      `### ${v.word}\n\n${v.definition || '*(no definition)*'}\n\n*Added: ${v.added}*\n`
+    ).join('\n---\n\n');
+    const header = `# My Vocab List\n\n*Exported ${stamp} · ${vocabList.length} words*\n\n---\n\n`;
+    downloadFile(header + md, `vocab_${stamp}.md`, 'text/markdown;charset=utf-8');
+    showToast(`Exported ${vocabList.length} words as Markdown`);
+  }
+  else if (format === 'clipboard') {
+    const text = vocabList.map(v =>
+      `${v.word}: ${v.definition || '(no definition)'}`
+    ).join('\n\n');
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(`Copied ${vocabList.length} words to clipboard`);
+    }).catch(() => {
+      showToast('Clipboard copy failed', true);
+    });
+  }
+}
+
+function importVocab(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const imported = JSON.parse(evt.target.result);
+      if (!Array.isArray(imported)) throw new Error('Not an array');
+
+      let added = 0, skipped = 0;
+      imported.forEach(item => {
+        if (!item.word) { skipped++; return; }
+        // Skip if word already exists (case-insensitive)
+        if (vocabList.some(v => v.word.toLowerCase() === item.word.toLowerCase())) {
+          skipped++;
+          return;
+        }
+        vocabList.unshift({
+          id: genId(),
+          word: String(item.word),
+          definition: String(item.definition || ''),
+          added: item.added || today(),
+          updated: item.updated || today()
+        });
+        added++;
+      });
+
+      saveVocab();
+      renderVocab();
+      showToast(`Imported ${added} words${skipped ? ` (${skipped} skipped)` : ''}`);
+    } catch (err) {
+      console.error('Import error:', err);
+      showToast('Invalid JSON file', true);
+    }
+    // Reset so the same file can be re-selected
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function startEditVocab(id) {
+  vocabEditingId = id;
+  renderVocab();
+}
+
+function saveEditVocab(id) {
+  const item = vocabList.find(x => x.id === id);
+  if (!item) return;
+  const w = document.getElementById('editWord_' + id).value.trim();
+  const d = document.getElementById('editDef_' + id).value.trim();
+  if (!w) return;
+  item.word = w;
+  item.definition = d;
+  item.updated = today();
+  vocabEditingId = null;
+  saveVocab();
+  renderVocab();
+  showToast('Word updated');
+}
+
+function cancelEditVocab() {
+  vocabEditingId = null;
+  renderVocab();
+}
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderVocab() {
+  // Update count badge
+  document.getElementById('vocabCountBadge').textContent = vocabList.length;
+
+  const q = (document.getElementById('vocabSearchInput')?.value || '').toLowerCase();
+  const filtered = q
+    ? vocabList.filter(v =>
+        v.word.toLowerCase().includes(q) ||
+        (v.definition || '').toLowerCase().includes(q))
+    : vocabList;
+
+  const list = document.getElementById('vocabList');
+
+  if (!vocabList.length) {
+    list.innerHTML = `
+      <div class="vocab-empty">
+        <p>No words yet</p>
+        <span>Add words you want to remember above ↑</span>
+      </div>`;
+    return;
+  }
+
+  if (!filtered.length) {
+    list.innerHTML = `
+      <div class="vocab-empty">
+        <p>No matches</p>
+        <span>Try a different search term</span>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(v => {
+    if (vocabEditingId === v.id) {
+      return `
+        <div class="vocab-item editing">
+          <input type="text" id="editWord_${v.id}" value="${escapeHtml(v.word)}" placeholder="Word">
+          <textarea id="editDef_${v.id}" placeholder="Definition">${escapeHtml(v.definition)}</textarea>
+          <div class="vocab-edit-actions">
+            <button onclick="cancelEditVocab()">Cancel</button>
+            <button class="save" onclick="saveEditVocab('${v.id}')">Save</button>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="vocab-item">
+        <div class="vocab-word-row">
+          <span class="vocab-word">${escapeHtml(v.word)}</span>
+          <div class="vocab-actions">
+            <button class="vocab-action-btn" onclick="startEditVocab('${v.id}')" title="Edit">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="vocab-action-btn del" onclick="deleteVocab('${v.id}')" title="Delete">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 01-2 2H9a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="vocab-def ${!v.definition ? 'empty' : ''}">${v.definition ? escapeHtml(v.definition) : 'No definition added.'}</div>
+        <div class="vocab-meta">Added ${v.added}${v.updated && v.updated !== v.added ? ' · Updated ' + v.updated : ''}</div>
+      </div>`;
+  }).join('');
+}
+
+// Close sidebar with Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('vocabSidebar').classList.contains('open')) {
+    closeVocabSidebar();
+  }
+});
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 (async function init() {
   await loadFromStorage();
+  loadVocab();
   document.getElementById('loadingOverlay').style.display = 'none';
   document.getElementById('mainApp').style.display = '';
   renderAll();
+  renderVocab();
 })();
 </script>
 </body>
